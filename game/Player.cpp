@@ -1023,7 +1023,7 @@ idInventory::HasAmmo
 ===============
 */
 int idInventory::HasAmmo( int index, int amount ) {
-	if ( ( index == 0 ) || !amount ) {
+	if ( ( index == 0 ) || !amount || (index == 4)) {
 		// always allow weapons that don't use ammo to fire
 		return -1;
 	}
@@ -1552,7 +1552,7 @@ void idPlayer::Init( void ) {
 	playerView.ClearEffects();
 
 	// damage values
-	fl.takedamage			= true;
+	fl.takedamage			= false;
 	ClearPain();
 
 	// restore persistent data
@@ -1669,7 +1669,7 @@ void idPlayer::Init( void ) {
 	// initialize the script variables
 	memset ( &pfl, 0, sizeof( pfl ) );
 	pfl.onGround = true;
-	pfl.noFallingDamage = false;
+	pfl.noFallingDamage = true;
 
 	// Start in idle
 	SetAnimState( ANIMCHANNEL_TORSO, "Torso_Idle", 0 );
@@ -1974,7 +1974,7 @@ void idPlayer::Spawn( void ) {
 		}
 // RAVEN BEGIN
 // mekberg: set to blaster now and disable the weapon.
-		idealWeapon = SlotForWeapon ( "weapon_blaster" ); 
+		idealWeapon = SlotForWeapon ( "weapon_grenadelauncher" ); 
 		Event_DisableWeapon( );
 // RAVEN END
 	} else {
@@ -6189,7 +6189,7 @@ void idPlayer::Weapon_NPC( void ) {
 				talkingNPC = focusAI;
 			}
 		}
-	} else if ( currentWeapon == SlotForWeapon ( "weapon_blaster" ) ) {
+	} else if ( currentWeapon == SlotForWeapon ( "weapon_grenadelauncher" ) ) {
 		Weapon_Combat();
 	}
 }

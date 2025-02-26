@@ -1865,6 +1865,7 @@ void idPlayer::Spawn( void ) {
 			mphud->Activate( true, gameLocal.time );
 		}
 
+
 		// load cursor
 		GetCursorGUI();
 		if ( cursor ) {

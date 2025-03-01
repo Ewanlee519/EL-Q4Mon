@@ -1130,6 +1130,8 @@ idPlayer::idPlayer() {
 	inBuyZone				= false;
 	inBuyZonePrev			= false;
 // RITUAL END
+	moncount				= 0;
+
 	spectating				= false;
 	spectator				= 0;
 	forcedReady				= false;
@@ -1168,6 +1170,8 @@ idPlayer::idPlayer() {
 // squirrel: Mode-agnostic buymenus
 	carryOverCurrentWeapon	= -1;
 // RITUAL END
+
+
 	currentWeapon			= -1;
 	idealWeapon				= -1;
 	previousWeapon			= -1;
@@ -8453,8 +8457,17 @@ void idPlayer::PerformImpulse( int impulse ) {
 		ClientSendEvent( EVENT_IMPULSE, &msg );
 	}
 
-	if ( impulse >= IMPULSE_0 && impulse <= IMPULSE_12 ) {
-		SelectWeapon( impulse, false );
+	if ( impulse >= IMPULSE_0 && impulse <= IMPULSE_5 ) {
+		if (impulse > moncount - 1) {
+			return;
+		}
+		state = impulse;
+		if (monout[impulse] == false) {
+			MonChoose(impulse, moninfo, monsters);
+		}
+		else {
+			MonRecall(impulse, moninfo, monsters);
+		}
 		return;
 	}
 
@@ -14076,3 +14089,92 @@ int idPlayer::CanSelectWeapon(const char* weaponName)
 }
 
 // RITUAL END
+
+// Quakemon Code
+
+
+void idPlayer::MonCatch(idEntity* hitEntity, idPlayer* player) {
+	if (moncount > 5) { 
+		return;
+	}
+	idDict spawnArgs;
+	idEntity* newEnemy;
+
+	// Get the existing entity's classname
+	const char* classname = hitEntity->GetEntityDefName();
+	const char* caught;
+	for (int i = 0; i < 6; i++) {
+		if (moninfo[i].GetNumKeyVals() < 1) {
+			continue;
+		}
+		if (moninfo[i].GetString("classname", "", &caught)) {
+			if (caught == classname) {
+				gameLocal.Printf("Monster already caught!");
+				return;
+			}
+		}
+		gameLocal.Printf("Monster was caught: %s!\n", caught);
+	}
+	spawnArgs.Set("classname", classname);
+	gameLocal.Printf("Monster caught: %s!\n", classname);
+
+	// Get existing entity's position and modify it slightly
+	idVec3 spawnPos = player->GetPhysics()->GetOrigin() + idVec3(0, 100, 0); // Spawn 100 units to the right
+	spawnArgs.SetVector("origin", spawnPos);
+
+	// Get existing angles and keep the same rotation
+	idAngles angles = hitEntity->GetPhysics()->GetAxis().ToAngles();
+	spawnArgs.SetVector("angles", angles.ToForward());
+
+	hitEntity->RemoveTarget(hitEntity);
+	monout[moncount] = false;
+	moninfo[moncount] = spawnArgs;
+
+	moncount = (moncount > 5) ? 6 : moncount + 1;
+	
+}
+
+void idPlayer::MonChoose(int num, idDict* info, idEntity** monsters) {
+	if(moncount == 0) {
+		gameLocal.Printf("No monsters caught yet!\n");
+		return;
+	}
+	if(num>5){
+		return;
+	}
+	idEntity* monster;
+	idDict spawnArgs;
+
+	spawnArgs = info[num];
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	idVec3 spawnPos = player->GetPhysics()->GetOrigin() + idVec3(0, 100, 0); // Spawn 100 units to the right
+	spawnArgs.SetVector("origin", spawnPos);
+
+	gameLocal.SpawnEntityDef(spawnArgs, &monster);
+	if (monster) {
+		player->monid[num] = monster->entityNumber;
+		player->monsters[num] = monster;
+		player->monout[num] = true;
+	}
+}
+
+void idPlayer::MonRecall(int num, idDict* info, idEntity** monsters) {
+	if (moncount == 0) {
+		gameLocal.Printf("No monsters caught yet!\n");
+		return;
+	}
+	if(num>5){
+		return;
+	}
+
+	idPlayer* player = gameLocal.GetLocalPlayer();
+
+	idEntity* monsterout = gameLocal.entities[player->monid[num]];
+	if (monsterout) {
+		monsterout->PostEventMS(&EV_Remove, 0);
+		gameLocal.Printf("Removed entity with entityNumber: %d\n", player->monid[num]);
+	}
+	player->monout[num] = false;
+}
+

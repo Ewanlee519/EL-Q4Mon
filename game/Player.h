@@ -370,6 +370,13 @@ public:
 	bool					inBuyZone;
 	bool					inBuyZonePrev;
 // RITUAL END
+	idDict					moninfo[6];
+	idEntity*				monsters[6];
+	bool					monout[6];
+	int						moncount;
+	int						monid[6];
+	int						state;
+
 	bool					spectating;
 	bool					lastHitToggle;
 	bool					lastArmorHit;
@@ -620,6 +627,9 @@ public:
 	int						CanSelectWeapon				( const char* weaponName );
 	int						GetItemCost(const char* itemName);
 // RITUAL END
+	void					MonCatch(idEntity* hitEntity, idPlayer* player);
+	void					MonChoose(int num, idDict* info, idEntity** monsters);
+	void					MonRecall(int num, idDict* info, idEntity** monsters);
 	void					PerformImpulse( int impulse );
 	void					Spectate( bool spectate, bool force = false );
  	void					ToggleObjectives ( void );

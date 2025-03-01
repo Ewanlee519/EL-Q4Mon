@@ -3580,20 +3580,20 @@ bool idEntity::CanDamage( const idVec3 &origin, idVec3 &damagePoint, idEntity* i
 	dest[2] += 15.0;
 // RAVEN BEGIN
 // ddynerman: multiple collision worlds
-	gameLocal.TracePoint( this, tr, origin, dest, MASK_SOLID, NULL );
-// RAVEN END
-	if ( tr.fraction == 1.0 || ( gameLocal.GetTraceEntity( tr ) == this ) ) {
+	gameLocal.TracePoint(this, tr, origin, dest, MASK_SOLID, NULL);
+	// RAVEN END
+	if (tr.fraction == 1.0 || (gameLocal.GetTraceEntity(tr) == this)) {
 		damagePoint = tr.endpos;
 		return true;
 	}
 
 	dest = midpoint;
 	dest[2] -= 15.0;
-// RAVEN BEGIN
-// ddynerman: multiple collision worlds
-	gameLocal.TracePoint( this, tr, origin, dest, MASK_SOLID, NULL );
-// RAVEN END
-	if ( tr.fraction == 1.0 || ( gameLocal.GetTraceEntity( tr ) == this ) ) {
+	// RAVEN BEGIN
+	// ddynerman: multiple collision worlds
+	gameLocal.TracePoint(this, tr, origin, dest, MASK_SOLID, NULL);
+	// RAVEN END
+	if (tr.fraction == 1.0 || (gameLocal.GetTraceEntity(tr) == this)) {
 		damagePoint = tr.endpos;
 		return true;
 	}
@@ -3608,7 +3608,7 @@ idEntity::DamageFeedback
 callback function for when another entity recieved damage from this entity.  damage can be adjusted and returned to the caller.
 ================
 */
-void idEntity::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage ) {
+void idEntity::DamageFeedback(idEntity* victim, idEntity* inflictor, int& damage) {
 	// implemented in subclasses
 }
 
@@ -3629,51 +3629,76 @@ inflictor, attacker, dir, and point can be NULL for environmental effects
 
 ============
 */
-void idEntity::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, 
-					  const char *damageDefName, const float damageScale, const int location ) {
-	if ( forwardDamageEnt.IsValid() ) {
-		forwardDamageEnt->Damage( inflictor, attacker, dir, damageDefName, damageScale, location );
+void idEntity::Damage(idEntity* inflictor, idEntity* attacker, const idVec3& dir,
+	const char* damageDefName, const float damageScale, const int location) {
+	if (forwardDamageEnt.IsValid()) {
+		forwardDamageEnt->Damage(inflictor, attacker, dir, damageDefName, damageScale, location);
 		return;
 	}
 
-	if ( !fl.takedamage ) {
+	if (!fl.takedamage) {
 		return;
 	}
 
-	if ( !inflictor ) {
+	if (!inflictor) {
 		inflictor = gameLocal.world;
 	}
 
-	if ( !attacker ) {
+	if (!attacker) {
 		attacker = gameLocal.world;
 	}
 
-	const idDict *damageDef = gameLocal.FindEntityDefDict( damageDefName, false );
-	if ( !damageDef ) {
-		gameLocal.Error( "Unknown damageDef '%s'\n", damageDefName );
+	const idDict* damageDef = gameLocal.FindEntityDefDict(damageDefName, false);
+	if (!damageDef) {
+		gameLocal.Error("Unknown damageDef '%s'\n", damageDefName);
 	}
 
-	int	damage = damageDef->GetInt( "damage" );
+	int	damage = damageDef->GetInt("damage");
 
 	// inform the attacker that they hit someone
-	attacker->DamageFeedback( this, inflictor, damage );
-	if ( damage ) {
+	attacker->DamageFeedback(this, inflictor, damage);
+	if (damage) {
 		// do the damage
 		//jshepard: this is kinda important, no?
 		health -= damage;
 
-		if ( health <= 0 ) {
-			if ( health < -999 ) {
+		if (health <= 0) {
+			if (health < -999) {
 				health = -999;
 			}
 
-			Killed( inflictor, attacker, damage, dir, location );
-		} else {
-			Pain( inflictor, attacker, damage, dir, location );
+			Killed(inflictor, attacker, damage, dir, location);
+		}
+		else {
+			Pain(inflictor, attacker, damage, dir, location);
 		}
 	}
 }
 
+/*
+============
+idEntity::Catch
+============
+*//*
+void idEntity::Catch(idEntity* inflictor, idEntity* attacker, const idVec3& dir,
+	const char* damageDefName, const float damageScale, const int location) {
+
+	if (!fl.cancatch) {
+		return;
+	}
+
+	if (!inflictor) {
+		inflictor = gameLocal.world;
+	}
+
+	if (!attacker) {
+		attacker = gameLocal.world;
+	}
+
+
+
+}
+*/
 /*
 ============
 idEntity::SkipImpulse

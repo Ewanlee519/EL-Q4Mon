@@ -713,6 +713,16 @@ bool idProjectile::Collide( const trace_t &collision, const idVec3 &velocity, bo
  		return true;
  	}
  
+	idAI* hitEntity = static_cast<idAI*>(gameLocal.entities[collision.c.entityNum]);
+	if (hitEntity) {
+		if (strstr(hitEntity->GetName(), "monster") != nullptr) {
+			if (owner && owner->IsType(idPlayer::GetClassType())) {
+				idPlayer* player = dynamic_cast<idPlayer*>(owner.GetEntity());
+				player->MonCatch(hitEntity, player);  // Pass the hit entity
+			};
+		}
+	}
+
 	// get the entity the projectile collided with
 	ent = gameLocal.entities[ collision.c.entityNum ];
 	if ( ent == owner.GetEntity() ) {

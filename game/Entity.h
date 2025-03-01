@@ -311,6 +311,7 @@ public:
 	float					DistanceTo2d	( const idVec3& pos ) const;
 
 	virtual bool			CanTakeDamage	( void ) const;
+//	virtual bool			CanBeCaught		(void) const;
 // RAVEN END
 
 	// entity binding
@@ -415,6 +416,8 @@ public:
 // RAVEN END
 							// applies damage to this entity
 	virtual	void			Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, const char *damageDefName, const float damageScale, const int location );
+							// to catch the enemy
+//	virtual void			Catch(idEntity* inflictor, idEntity* attacker, const idVec3& dir, const char* damageDefName, const float damageScale, const int location);
 							// adds a damage effect like overlays, blood, sparks, debris etc.
 	virtual void			AddDamageEffect( const trace_t &collision, const idVec3 &velocity, const char *damageDefName, idEntity* inflictor );
 	virtual bool			CanPlayImpactEffect ( idEntity* attacker, idEntity* target );

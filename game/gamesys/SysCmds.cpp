@@ -2955,6 +2955,21 @@ void Cmd_ToggleHelp_f(const idCmdArgs& args) {
 	}
 }
 
+void Cmd_ToggleShop_f(const idCmdArgs& args) {
+	idPlayer* player = gameLocal.GetLocalPlayer();
+	idUserInterface* hud = player->hud;
+	bool open = hud->GetStateBool("shopOpen", "0");
+	if (!open) {
+		hud->HandleNamedEvent("openHShop");
+		hud->SetStateBool("shopOpen", 1);
+	}
+	else {
+		hud->HandleNamedEvent("closeShop");
+		hud->SetStateBool("shopOpen", 0);
+	}
+}
+
+
 void Cmd_PlayerEmote_f( const idCmdArgs& args ) {
 	if( gameLocal.GetLocalPlayer() == NULL ) {
 		gameLocal.Warning( "Cmd_Emote_f() - local player is NULL" );
@@ -3247,6 +3262,8 @@ void idGameLocal::InitConsoleCommands( void ) {
 	cmdSystem->AddCommand( "buy",					Cmd_BuyItem_f,				CMD_FL_GAME,				"Buy an item (if in a buy zone and the game type supports it)" );
 // RITUAL END
 	cmdSystem->AddCommand("togglehelp",				Cmd_ToggleHelp_f,			CMD_FL_GAME,				"Toggle help menu");
+	cmdSystem->AddCommand("toggleshop",				Cmd_ToggleShop_f,			CMD_FL_GAME,				"Toggle shop menu");
+
 
 }
 

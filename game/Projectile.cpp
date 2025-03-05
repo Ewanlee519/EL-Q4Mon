@@ -719,6 +719,7 @@ bool idProjectile::Collide( const trace_t &collision, const idVec3 &velocity, bo
 			if (owner && owner->IsType(idPlayer::GetClassType())) {
 				idPlayer* player = dynamic_cast<idPlayer*>(owner.GetEntity());
 				player->MonCatch(hitEntity, player);  // Pass the hit entity
+				hitEntity->PostEventMS(&EV_Remove, 0);
 			};
 		}
 	}

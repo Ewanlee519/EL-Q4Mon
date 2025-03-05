@@ -1131,6 +1131,7 @@ idPlayer::idPlayer() {
 	inBuyZonePrev			= false;
 // RITUAL END
 	moncount				= 0;
+	state					= 0;
 
 	spectating				= false;
 	spectator				= 0;
@@ -8462,12 +8463,13 @@ void idPlayer::PerformImpulse( int impulse ) {
 			return;
 		}
 		state = impulse;
-		if (monout[impulse] == false) {
+		SelectMonster(state);
+		/*if (monout[impulse] == false) {
 			MonChoose(impulse, moninfo, monsters);
 		}
 		else {
 			MonRecall(impulse, moninfo, monsters);
-		}
+		}*/
 		return;
 	}
 
@@ -14107,13 +14109,11 @@ void idPlayer::MonCatch(idEntity* hitEntity, idPlayer* player) {
 		if (moninfo[i].GetNumKeyVals() < 1) {
 			continue;
 		}
-		if (moninfo[i].GetString("classname", "", &caught)) {
-			if (caught == classname) {
-				gameLocal.Printf("Monster already caught!");
-				return;
-			}
+		caught = moninfo[i].GetString("classname", "");
+		if (strcmp(classname, caught)==0) {
+			gameLocal.Printf("Monster already caught!\n");
+			return;
 		}
-		gameLocal.Printf("Monster was caught: %s!\n", caught);
 	}
 	spawnArgs.Set("classname", classname);
 	gameLocal.Printf("Monster caught: %s!\n", classname);
@@ -14125,6 +14125,7 @@ void idPlayer::MonCatch(idEntity* hitEntity, idPlayer* player) {
 	// Get existing angles and keep the same rotation
 	idAngles angles = hitEntity->GetPhysics()->GetAxis().ToAngles();
 	spawnArgs.SetVector("angles", angles.ToForward());
+	spawnArgs.Set("passive", "1");
 
 	hitEntity->RemoveTarget(hitEntity);
 	monout[moncount] = false;
@@ -14177,4 +14178,38 @@ void idPlayer::MonRecall(int num, idDict* info, idEntity** monsters) {
 	}
 	player->monout[num] = false;
 }
+void idPlayer::SelectMonster(int state) {
+	idPlayer* player = gameLocal.GetLocalPlayer();
+	idUserInterface* hud = player->GetHud();
+	hud->HandleNamedEvent("deselectMon");
+	switch (state) {
+		case 0:
+			gameLocal.Printf("Monster 1 selected!");
+			hud->HandleNamedEvent("selectMon1");
+			return;
+		case 1:
+			gameLocal.Printf("Monster 2 selected!");
+			hud->HandleNamedEvent("selectMon2");
+			return;
+		case 2:
+			gameLocal.Printf("Monster 3 selected!");
+			hud->HandleNamedEvent("selectMon3");
+			return;
+		case 3:
+			gameLocal.Printf("Monster 4 selected!");
+			hud->HandleNamedEvent("selectMon4");
+			return;
+		case 4:
+			gameLocal.Printf("Monster 5 selected!");
+			hud->HandleNamedEvent("selectMon5");
+			return;
+		case 5:
+			gameLocal.Printf("Monster 6 selected!");
+			hud->HandleNamedEvent("selectMon6");
+			return;
+		default:
+			return;
+	}
+}
+
 

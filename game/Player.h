@@ -630,6 +630,7 @@ public:
 	void					MonCatch(idEntity* hitEntity, idPlayer* player);
 	void					MonChoose(int num, idDict* info, idEntity** monsters);
 	void					MonRecall(int num, idDict* info, idEntity** monsters);
+	void					SelectMonster(int state);
 	void					PerformImpulse( int impulse );
 	void					Spectate( bool spectate, bool force = false );
  	void					ToggleObjectives ( void );

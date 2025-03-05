@@ -2960,12 +2960,26 @@ void Cmd_ToggleShop_f(const idCmdArgs& args) {
 	idUserInterface* hud = player->hud;
 	bool open = hud->GetStateBool("shopOpen", "0");
 	if (!open) {
-		hud->HandleNamedEvent("openHShop");
+		hud->HandleNamedEvent("openShop");
 		hud->SetStateBool("shopOpen", 1);
 	}
 	else {
 		hud->HandleNamedEvent("closeShop");
 		hud->SetStateBool("shopOpen", 0);
+	}
+}
+
+void Cmd_MonCall_f(const idCmdArgs& args) {
+	idPlayer* player = gameLocal.GetLocalPlayer();
+	int mons = player->moncount;
+	if (mons == 0) { return; }
+	int state = player->state;
+	bool out = player->monout[state];
+	if (out) {
+		player->MonRecall(state, player->moninfo, player->monsters);
+	}
+	else {
+		player->MonChoose(state, player->moninfo, player->monsters);
 	}
 }
 
@@ -3263,6 +3277,7 @@ void idGameLocal::InitConsoleCommands( void ) {
 // RITUAL END
 	cmdSystem->AddCommand("togglehelp",				Cmd_ToggleHelp_f,			CMD_FL_GAME,				"Toggle help menu");
 	cmdSystem->AddCommand("toggleshop",				Cmd_ToggleShop_f,			CMD_FL_GAME,				"Toggle shop menu");
+	cmdSystem->AddCommand("moncall",				Cmd_MonCall_f,				CMD_FL_GAME,				"Send and recall Monster");
 
 
 }

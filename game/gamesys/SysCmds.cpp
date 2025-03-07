@@ -2944,14 +2944,14 @@ void Cmd_BuyItem_f( const idCmdArgs& args ) {
 void Cmd_ToggleHelp_f(const idCmdArgs& args) {
 	idPlayer* player = gameLocal.GetLocalPlayer();
 	idUserInterface* hud = player->hud;
-	bool open = hud->GetStateBool("helpOpen","0");
+	bool open = hud->GetStateBool("helpOpen","false");
 	if (!open) {
 		hud->HandleNamedEvent("openHelp");
-		hud->SetStateBool("helpOpen", 1);
+		hud->SetStateBool("helpOpen", true);
 	}
 	else {
 		hud->HandleNamedEvent("closeHelp");
-		hud->SetStateBool("helpOpen", 0);
+		hud->SetStateBool("helpOpen", false);
 	}
 }
 
@@ -2961,12 +2961,29 @@ void Cmd_ToggleShop_f(const idCmdArgs& args) {
 	bool open = hud->GetStateBool("shopOpen", "0");
 	if (!open) {
 		hud->HandleNamedEvent("openShop");
-		hud->SetStateBool("shopOpen", 1);
 	}
 	else {
 		hud->HandleNamedEvent("closeShop");
-		hud->SetStateBool("shopOpen", 0);
 	}
+}
+
+
+void Cmd_MonCommand_f(const idCmdArgs& args) {
+	idPlayer* player = gameLocal.GetLocalPlayer();
+	idUserInterface* hud = player->hud;
+	player->MonOptions();
+	bool open = hud->GetStateBool("desktop::hudOpen", "true");
+	if (!open) {
+		hud->HandleNamedEvent("openHUD");
+		hud->SetStateBool("desktop::hudOpen", true);
+		gameLocal.Printf("Hud turned on. Hud open: %d\n", hud->GetStateBool("hudOpen"));
+	}
+	else {
+		hud->HandleNamedEvent("closeHUD");
+		hud->SetStateBool("desktop::hudOpen", false);
+		gameLocal.Printf("Hud turned off. Hud open: %d\n", hud->GetStateBool("hudOpen"));
+	}
+	hud->StateChanged(gameLocal.time);
 }
 
 void Cmd_MonCall_f(const idCmdArgs& args) {
@@ -3277,6 +3294,7 @@ void idGameLocal::InitConsoleCommands( void ) {
 // RITUAL END
 	cmdSystem->AddCommand("togglehelp",				Cmd_ToggleHelp_f,			CMD_FL_GAME,				"Toggle help menu");
 	cmdSystem->AddCommand("toggleshop",				Cmd_ToggleShop_f,			CMD_FL_GAME,				"Toggle shop menu");
+	cmdSystem->AddCommand("monoptions",				Cmd_MonCommand_f,			CMD_FL_GAME,				"Send commands to monsters");
 	cmdSystem->AddCommand("moncall",				Cmd_MonCall_f,				CMD_FL_GAME,				"Send and recall Monster");
 
 

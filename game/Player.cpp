@@ -1842,6 +1842,7 @@ void idPlayer::Spawn( void ) {
 		// load HUD
 		hud = NULL;
 		mphud = NULL;
+		monhud = NULL;
  		
 		overlayHud = NULL;
 		overlayHudTime = 0;
@@ -1862,12 +1863,23 @@ void idPlayer::Spawn( void ) {
 			}
 		}
 
+		if (!monhud) {
+			monhud = uiManager->FindGui("guis/attacks.gui", true, false, true);
+			if (!monhud) {
+				gameLocal.Warning("idPlayer::Spawn() - No Monster hud found.");
+			}
+		}
+
 		if ( hud ) {
 			hud->Activate( true, gameLocal.time );
 		}
 
 		if ( mphud ) {
 			mphud->Activate( true, gameLocal.time );
+		}
+
+		if (monhud) {
+			monhud->Activate(true, gameLocal.time);
 		}
 
 
@@ -14210,6 +14222,38 @@ void idPlayer::SelectMonster(int state) {
 		default:
 			return;
 	}
+}
+
+void idPlayer::MonOptions() {
+	idPlayer* player = gameLocal.GetLocalPlayer();
+	idUserInterface* attacksGui = player->monhud;
+	if (!attacksGui) {
+		attacksGui = uiManager->FindGui("guis/attacks.gui", true, false);
+		if (!attacksGui) {
+			gameLocal.Printf("Failed to load attacks.gui!\n");
+			return;
+		}
+	}
+
+	attacksGui->Redraw(gameLocal.time);
+
+	// Check current visibility state
+	bool isOpen = attacksGui->GetStateBool("desktop::visible", "0");
+
+	// Toggle visibility
+	if (!isOpen) {
+		attacksGui->Activate(true, gameLocal.time);  // Activate GUI
+		attacksGui->SetStateInt("desktop::visible", 1);
+		gameLocal.Printf("Attacks GUI activated.\n");
+	}
+	else {
+		attacksGui->Activate(false, gameLocal.time); // Deactivate GUI
+		attacksGui->SetStateInt("desktop::visible", 0);
+		gameLocal.Printf("Attacks GUI deactivated.\n");
+	}
+
+	// Apply changes to GUI state
+	attacksGui->StateChanged(gameLocal.time);
 }
 
 

@@ -340,6 +340,7 @@ public:
 
  	idUserInterface *		hud;				// Common hud
 	idUserInterface *		mphud;				// hud overlay containing MP elements
+	idUserInterface*		monhud;				// hud for monster commands
 	
 	idUserInterface *		objectiveSystem;
 	idUserInterface *		cinematicHud;
@@ -631,6 +632,7 @@ public:
 	void					MonChoose(int num, idDict* info, idEntity** monsters);
 	void					MonRecall(int num, idDict* info, idEntity** monsters);
 	void					SelectMonster(int state);
+	void					MonOptions();
 	void					PerformImpulse( int impulse );
 	void					Spectate( bool spectate, bool force = false );
  	void					ToggleObjectives ( void );

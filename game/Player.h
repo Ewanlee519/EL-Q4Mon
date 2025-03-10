@@ -376,7 +376,9 @@ public:
 	bool					monout[6];
 	int						moncount;
 	int						monid[6];
-	int						state;
+	int						monstate;
+	int						guinum;
+	bool					monopt;
 
 	bool					spectating;
 	bool					lastHitToggle;
@@ -632,7 +634,8 @@ public:
 	void					MonChoose(int num, idDict* info, idEntity** monsters);
 	void					MonRecall(int num, idDict* info, idEntity** monsters);
 	void					SelectMonster(int state);
-	void					MonOptions();
+	void					MonOptions(int input);
+	void					switchHUD();
 	void					PerformImpulse( int impulse );
 	void					Spectate( bool spectate, bool force = false );
  	void					ToggleObjectives ( void );

@@ -1131,7 +1131,9 @@ idPlayer::idPlayer() {
 	inBuyZonePrev			= false;
 // RITUAL END
 	moncount				= 0;
-	state					= 0;
+	monstate				= 0;
+	guinum					= 0;
+	monopt					= false;
 
 	spectating				= false;
 	spectator				= 0;
@@ -8469,20 +8471,24 @@ void idPlayer::PerformImpulse( int impulse ) {
 		msg.WriteBits( impulse, IMPULSE_NUMBER_OF_BITS );
 		ClientSendEvent( EVENT_IMPULSE, &msg );
 	}
-
-	if ( impulse >= IMPULSE_0 && impulse <= IMPULSE_5 ) {
-		if (impulse > moncount - 1) {
+	
+	if (impulse >= IMPULSE_0 && impulse <= IMPULSE_5) {
+		if (!monopt) {
+			if (impulse > moncount - 1) {
+				return;
+			}
+			monstate = impulse;
+			SelectMonster(monstate);
 			return;
 		}
-		state = impulse;
-		SelectMonster(state);
-		/*if (monout[impulse] == false) {
-			MonChoose(impulse, moninfo, monsters);
-		}
 		else {
-			MonRecall(impulse, moninfo, monsters);
-		}*/
-		return;
+			if (impulse > IMPULSE_3) {
+				return;
+			}
+			guinum = impulse;
+			MonOptions(guinum);
+			return;
+		}
 	}
 
 //RAVEN BEGIN
@@ -8550,25 +8556,25 @@ void idPlayer::PerformImpulse( int impulse ) {
 			}
 			break;
 		}
-		case IMPULSE_21: {
-			if( gameLocal.isServer && gameLocal.gameType == GAME_TOURNEY ) {
-				// only allow a client to join the waiting arena if they are not currently assigned to an arena
+		//case IMPULSE_21: {
+		//	if( gameLocal.isServer && gameLocal.gameType == GAME_TOURNEY ) {
+		//		// only allow a client to join the waiting arena if they are not currently assigned to an arena
 
-				// removed waiting arena functionality for now
-				/*rvTourneyArena& arena = ((rvTourneyGameState*)gameLocal.mpGame.GetGameState())->GetArena( GetArena() );
+		//		// removed waiting arena functionality for now
+		//		/*rvTourneyArena& arena = ((rvTourneyGameState*)gameLocal.mpGame.GetGameState())->GetArena( GetArena() );
 
-				if( this != arena.GetPlayers()[ 0 ] && this != arena.GetPlayers()[ 1 ] ) {
-					if( instance == MAX_ARENAS && !spectating ) {
-						ServerSpectate( true );
-						JoinInstance( ((rvTourneyGameState*)gameLocal.mpGame.GetGameState())->GetNextActiveArena( 0 ) );
-					} else if( spectating ) {
-						JoinInstance( MAX_ARENAS );
-						ServerSpectate( false );
-					}
-				}*/
-			}
-			break;
-		}
+		//		if( this != arena.GetPlayers()[ 0 ] && this != arena.GetPlayers()[ 1 ] ) {
+		//			if( instance == MAX_ARENAS && !spectating ) {
+		//				ServerSpectate( true );
+		//				JoinInstance( ((rvTourneyGameState*)gameLocal.mpGame.GetGameState())->GetNextActiveArena( 0 ) );
+		//			} else if( spectating ) {
+		//				JoinInstance( MAX_ARENAS );
+		//				ServerSpectate( false );
+		//			}
+		//		}*/
+		//	}
+		//	break;
+		//}
 		case IMPULSE_22: {
  			if ( gameLocal.isClient || entityNumber == gameLocal.localClientNum ) {
  				gameLocal.mpGame.ToggleSpectate( );
@@ -14128,7 +14134,10 @@ void idPlayer::MonCatch(idEntity* hitEntity, idPlayer* player) {
 		}
 	}
 	spawnArgs.Set("classname", classname);
-	gameLocal.Printf("Monster caught: %s!\n", classname);
+	idStr hudName = static_cast<idStr>(classname).ReplaceChar('_',' ');
+	hudName.Replace("monster", "");	hudName.Replace("strogg", ""); hudName.Replace(" ", "");
+	hudName.ToUpper();
+	gameLocal.Printf("Monster caught: %s!\n", hudName.c_str());
 
 	// Get existing entity's position and modify it slightly
 	idVec3 spawnPos = player->GetPhysics()->GetOrigin() + idVec3(0, 100, 0); // Spawn 100 units to the right
@@ -14138,6 +14147,36 @@ void idPlayer::MonCatch(idEntity* hitEntity, idPlayer* player) {
 	idAngles angles = hitEntity->GetPhysics()->GetAxis().ToAngles();
 	spawnArgs.SetVector("angles", angles.ToForward());
 	spawnArgs.Set("passive", "1");
+
+	switch (moncount) {
+	case 0:
+		gameLocal.GetLocalPlayer()->hud->SetStateString("mon1", hudName.c_str());
+		gameLocal.GetLocalPlayer()->hud->HandleNamedEvent("updateMon1");
+		break;
+	case 1:
+		gameLocal.GetLocalPlayer()->hud->SetStateString("mon2", hudName.c_str());
+		gameLocal.GetLocalPlayer()->hud->HandleNamedEvent("updateMon2");
+		break;
+	case 2:
+		gameLocal.GetLocalPlayer()->hud->SetStateString("mon3", hudName.c_str());
+		gameLocal.GetLocalPlayer()->hud->HandleNamedEvent("updateMon3");
+		break;
+	case 3:
+		gameLocal.GetLocalPlayer()->hud->SetStateString("mon4", hudName.c_str());
+		gameLocal.GetLocalPlayer()->hud->HandleNamedEvent("updateMon4");
+		break;
+	case 4:
+		gameLocal.GetLocalPlayer()->hud->SetStateString("mon5", hudName.c_str());
+		gameLocal.GetLocalPlayer()->hud->HandleNamedEvent("updateMon5");
+		break;
+	case 5:
+		gameLocal.GetLocalPlayer()->hud->SetStateString("mon6", hudName.c_str());
+		gameLocal.GetLocalPlayer()->hud->HandleNamedEvent("updateMon6");
+		break;
+	default:
+		break;
+	}
+	
 
 	hitEntity->RemoveTarget(hitEntity);
 	monout[moncount] = false;
@@ -14224,36 +14263,48 @@ void idPlayer::SelectMonster(int state) {
 	}
 }
 
-void idPlayer::MonOptions() {
+void idPlayer::MonOptions(int input) {
 	idPlayer* player = gameLocal.GetLocalPlayer();
-	idUserInterface* attacksGui = player->monhud;
-	if (!attacksGui) {
-		attacksGui = uiManager->FindGui("guis/attacks.gui", true, false);
-		if (!attacksGui) {
-			gameLocal.Printf("Failed to load attacks.gui!\n");
-			return;
-		}
+	idUserInterface* monhud = player->GetHud();
+	if (input > 3) return;
+	switch (input) {
+	case 0:
+		monhud->HandleNamedEvent("selectAttack");
+		return;
+	case 1:
+		monhud->HandleNamedEvent("selectItems");
+		return;
+	case 2:
+		monhud->HandleNamedEvent("selectRun");
+		return;
+	case 3:
+		monhud->HandleNamedEvent("selectSwitch");
+		return;
+	default:
+		return;
 	}
+}
 
-	attacksGui->Redraw(gameLocal.time);
+void idPlayer::switchHUD() {
+	idPlayer* player = gameLocal.GetLocalPlayer();
+	idUserInterface* hud = player->hud;
 
 	// Check current visibility state
-	bool isOpen = attacksGui->GetStateBool("desktop::visible", "0");
+	bool open = hud->GetStateBool("desktop::hudOpen", "false");
 
 	// Toggle visibility
-	if (!isOpen) {
-		attacksGui->Activate(true, gameLocal.time);  // Activate GUI
-		attacksGui->SetStateInt("desktop::visible", 1);
-		gameLocal.Printf("Attacks GUI activated.\n");
+	if (!open) {
+		hud->HandleNamedEvent("openHUD");
+		hud->SetStateBool("desktop::hudOpen", true);
+		player->monopt = false;
 	}
 	else {
-		attacksGui->Activate(false, gameLocal.time); // Deactivate GUI
-		attacksGui->SetStateInt("desktop::visible", 0);
-		gameLocal.Printf("Attacks GUI deactivated.\n");
+		hud->HandleNamedEvent("closeHUD");
+		hud->SetStateBool("desktop::hudOpen", false);
+		player->monopt = true;
 	}
 
 	// Apply changes to GUI state
-	attacksGui->StateChanged(gameLocal.time);
+	hud->StateChanged(gameLocal.time);
 }
-
 

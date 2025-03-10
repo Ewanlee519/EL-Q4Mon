@@ -2970,27 +2970,15 @@ void Cmd_ToggleShop_f(const idCmdArgs& args) {
 
 void Cmd_MonCommand_f(const idCmdArgs& args) {
 	idPlayer* player = gameLocal.GetLocalPlayer();
-	idUserInterface* hud = player->hud;
-	player->MonOptions();
-	bool open = hud->GetStateBool("desktop::hudOpen", "true");
-	if (!open) {
-		hud->HandleNamedEvent("openHUD");
-		hud->SetStateBool("desktop::hudOpen", true);
-		gameLocal.Printf("Hud turned on. Hud open: %d\n", hud->GetStateBool("hudOpen"));
-	}
-	else {
-		hud->HandleNamedEvent("closeHUD");
-		hud->SetStateBool("desktop::hudOpen", false);
-		gameLocal.Printf("Hud turned off. Hud open: %d\n", hud->GetStateBool("hudOpen"));
-	}
-	hud->StateChanged(gameLocal.time);
+	player->switchHUD();
+	
 }
 
 void Cmd_MonCall_f(const idCmdArgs& args) {
 	idPlayer* player = gameLocal.GetLocalPlayer();
 	int mons = player->moncount;
 	if (mons == 0) { return; }
-	int state = player->state;
+	int state = player->monstate;
 	bool out = player->monout[state];
 	if (out) {
 		player->MonRecall(state, player->moninfo, player->monsters);

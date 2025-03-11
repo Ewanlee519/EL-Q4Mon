@@ -2970,12 +2970,25 @@ void Cmd_ToggleShop_f(const idCmdArgs& args) {
 
 void Cmd_MonCommand_f(const idCmdArgs& args) {
 	idPlayer* player = gameLocal.GetLocalPlayer();
+	int monsout=0;
+	for (int i; i < player->moncount; i++) {
+		if (player->monout[i]) {
+			monsout++;
+		}
+	}
+	if (monsout != 1) {
+		gameLocal.Printf("Only 1 monster can be commanded at a time!");
+		return;
+	}
 	player->switchHUD();
 	
 }
 
 void Cmd_MonCall_f(const idCmdArgs& args) {
 	idPlayer* player = gameLocal.GetLocalPlayer();
+	if (player->hudStatus != 0) {
+		return;
+	}
 	int mons = player->moncount;
 	if (mons == 0) { return; }
 	int state = player->monstate;

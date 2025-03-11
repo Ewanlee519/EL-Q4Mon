@@ -377,8 +377,11 @@ public:
 	int						moncount;
 	int						monid[6];
 	int						monstate;
-	int						guinum;
-	bool					monopt;
+	int						currmon;
+	int						guinum; // 0 is attack, 1 is switch, 2 is items, 3 is run
+	int						hudStatus; // Or int hudStatus: 0 is HUD, 1 is Options, 2 is SelectedOpt
+	int						attack_inp;
+	int						item_inp;
 
 	bool					spectating;
 	bool					lastHitToggle;

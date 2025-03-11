@@ -1132,8 +1132,11 @@ idPlayer::idPlayer() {
 // RITUAL END
 	moncount				= 0;
 	monstate				= 0;
+	currmon					= 0;
 	guinum					= 0;
-	monopt					= false;
+	hudStatus				= 0;
+	attack_inp				= 0;
+	item_inp				= 0;
 
 	spectating				= false;
 	spectator				= 0;
@@ -8471,24 +8474,114 @@ void idPlayer::PerformImpulse( int impulse ) {
 		msg.WriteBits( impulse, IMPULSE_NUMBER_OF_BITS );
 		ClientSendEvent( EVENT_IMPULSE, &msg );
 	}
-	
+	idUserInterface* hud = gameLocal.GetLocalPlayer()->GetHud();
 	if (impulse >= IMPULSE_0 && impulse <= IMPULSE_5) {
-		if (!monopt) {
+		switch (hudStatus) {
+		case 0:
 			if (impulse > moncount - 1) {
 				return;
 			}
 			monstate = impulse;
 			SelectMonster(monstate);
 			return;
-		}
-		else {
+		case 1:
 			if (impulse > IMPULSE_3) {
 				return;
 			}
 			guinum = impulse;
 			MonOptions(guinum);
 			return;
+		case 2:
+			gameLocal.Printf("This is the current guinum: %d\n", guinum);
+			switch (guinum) {
+			case 0:
+				if(impulse > IMPULSE_3) {
+					return;
+				}
+				attack_inp = impulse;
+				hud->SetStateInt("attack_inp", attack_inp);
+				hud->HandleNamedEvent("pickAttack");
+				return;
+			case 1:
+				if (impulse > moncount - 1 || moncount <= 1) {
+					return;
+				}
+				monstate = impulse;
+				SelectMonster(monstate);
+				return;
+			case 2:
+				if (impulse > IMPULSE_4) {
+					return;
+				}
+				item_inp = impulse;
+				hud->SetStateInt("item_inp", item_inp);
+				hud->HandleNamedEvent("pickItem");
+				return;
+			default:
+				return;;
+			}
+		default:
+			return;
 		}
+	}
+
+	if (impulse == IMPULSE_20) {
+		switch (hudStatus) {
+		case 0:
+			return;
+		case 1:
+			hudStatus = 0;
+			hud->HandleNamedEvent("openHUD");
+			hud->SetStateBool("desktop::hudOpen", true);
+			return;
+		case 2:
+			hudStatus = 1;
+			hud->HandleNamedEvent("backOption");
+			return;
+		}
+	}
+
+	if (impulse == IMPULSE_21) {
+		if (hudStatus==1) {
+			if (guinum == 3) {
+				hudStatus = 0;
+				hud->HandleNamedEvent("openHUD");
+				hud->SetStateBool("desktop::hudOpen", true);
+				return;
+			}
+			else {
+				hudStatus = 2;
+				hud->HandleNamedEvent("pickOption");
+			}
+			return;
+		}
+		else if (hudStatus==2){
+			switch (guinum) {
+			case 0:
+				//Handle the attack
+				hudStatus = 1;
+				hud->HandleNamedEvent("backOption");
+				break;
+			case 1:
+				if (currmon == monstate) {
+					return;
+				}
+				MonRecall(currmon, moninfo, monsters);
+				MonChoose(monstate, moninfo, monsters);
+				hudStatus = 1;
+				hud->HandleNamedEvent("backOption");
+				break;
+			case 2:
+				//Use an item
+				hudStatus = 1;
+				hud->HandleNamedEvent("backOption");
+				break;
+			default:
+				break;
+			}
+			return;
+		}
+		return;
 	}
 
 //RAVEN BEGIN
@@ -8550,12 +8643,12 @@ void idPlayer::PerformImpulse( int impulse ) {
 */
 			break;
 		}
-		case IMPULSE_20: {
+		/*case IMPULSE_20: {
  			if ( gameLocal.isClient || entityNumber == gameLocal.localClientNum ) {
  				gameLocal.mpGame.ToggleTeam( );
 			}
 			break;
-		}
+		}*/
 		//case IMPULSE_21: {
 		//	if( gameLocal.isServer && gameLocal.gameType == GAME_TOURNEY ) {
 		//		// only allow a client to join the waiting arena if they are not currently assigned to an arena
@@ -14140,14 +14233,15 @@ void idPlayer::MonCatch(idEntity* hitEntity, idPlayer* player) {
 	gameLocal.Printf("Monster caught: %s!\n", hudName.c_str());
 
 	// Get existing entity's position and modify it slightly
-	idVec3 spawnPos = player->GetPhysics()->GetOrigin() + idVec3(0, 100, 0); // Spawn 100 units to the right
+	idVec3 spawnPos = player->GetPhysics()->GetOrigin() + (player->viewAngles.ToForward()*100); // Spawn 100 units to the right
 	spawnArgs.SetVector("origin", spawnPos);
 
 	// Get existing angles and keep the same rotation
-	idAngles angles = hitEntity->GetPhysics()->GetAxis().ToAngles();
+	idAngles angles = player->GetPhysics()->GetAxis().ToAngles();
 	spawnArgs.SetVector("angles", angles.ToForward());
 	spawnArgs.Set("passive", "1");
 
+	// Updates the names of the monsters in the HUD
 	switch (moncount) {
 	case 0:
 		gameLocal.GetLocalPlayer()->hud->SetStateString("mon1", hudName.c_str());
@@ -14176,12 +14270,13 @@ void idPlayer::MonCatch(idEntity* hitEntity, idPlayer* player) {
 	default:
 		break;
 	}
-	
 
+	// Catches the monster and then stores the values for spawning
 	hitEntity->RemoveTarget(hitEntity);
 	monout[moncount] = false;
 	moninfo[moncount] = spawnArgs;
 
+	// Updates the count of monsters, does not go over 6
 	moncount = (moncount > 5) ? 6 : moncount + 1;
 	
 }
@@ -14208,6 +14303,7 @@ void idPlayer::MonChoose(int num, idDict* info, idEntity** monsters) {
 		player->monid[num] = monster->entityNumber;
 		player->monsters[num] = monster;
 		player->monout[num] = true;
+		player->currmon = num;
 	}
 }
 
@@ -14235,27 +14331,27 @@ void idPlayer::SelectMonster(int state) {
 	hud->HandleNamedEvent("deselectMon");
 	switch (state) {
 		case 0:
-			gameLocal.Printf("Monster 1 selected!");
+			gameLocal.Printf("Monster 1 selected!\n");
 			hud->HandleNamedEvent("selectMon1");
 			return;
 		case 1:
-			gameLocal.Printf("Monster 2 selected!");
+			gameLocal.Printf("Monster 2 selected!\n");
 			hud->HandleNamedEvent("selectMon2");
 			return;
 		case 2:
-			gameLocal.Printf("Monster 3 selected!");
+			gameLocal.Printf("Monster 3 selected!\n");
 			hud->HandleNamedEvent("selectMon3");
 			return;
 		case 3:
-			gameLocal.Printf("Monster 4 selected!");
+			gameLocal.Printf("Monster 4 selected!\n");
 			hud->HandleNamedEvent("selectMon4");
 			return;
 		case 4:
-			gameLocal.Printf("Monster 5 selected!");
+			gameLocal.Printf("Monster 5 selected!\n");
 			hud->HandleNamedEvent("selectMon5");
 			return;
 		case 5:
-			gameLocal.Printf("Monster 6 selected!");
+			gameLocal.Printf("Monster 6 selected!\n");
 			hud->HandleNamedEvent("selectMon6");
 			return;
 		default:
@@ -14265,24 +14361,10 @@ void idPlayer::SelectMonster(int state) {
 
 void idPlayer::MonOptions(int input) {
 	idPlayer* player = gameLocal.GetLocalPlayer();
-	idUserInterface* monhud = player->GetHud();
-	if (input > 3) return;
-	switch (input) {
-	case 0:
-		monhud->HandleNamedEvent("selectAttack");
-		return;
-	case 1:
-		monhud->HandleNamedEvent("selectItems");
-		return;
-	case 2:
-		monhud->HandleNamedEvent("selectRun");
-		return;
-	case 3:
-		monhud->HandleNamedEvent("selectSwitch");
-		return;
-	default:
-		return;
-	}
+	player->hud->SetStateInt("input", input);
+	int value = player->hud->GetStateInt("input");
+	player->hud->HandleNamedEvent("optionInput");
+	return;
 }
 
 void idPlayer::switchHUD() {
@@ -14296,12 +14378,13 @@ void idPlayer::switchHUD() {
 	if (!open) {
 		hud->HandleNamedEvent("openHUD");
 		hud->SetStateBool("desktop::hudOpen", true);
-		player->monopt = false;
+		player->hudStatus = 0;
 	}
 	else {
 		hud->HandleNamedEvent("closeHUD");
 		hud->SetStateBool("desktop::hudOpen", false);
-		player->monopt = true;
+		hud->HandleNamedEvent("backOption");
+		player->hudStatus = 1;
 	}
 
 	// Apply changes to GUI state

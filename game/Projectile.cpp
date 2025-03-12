@@ -714,12 +714,13 @@ bool idProjectile::Collide( const trace_t &collision, const idVec3 &velocity, bo
  	}
  
 	idAI* hitEntity = static_cast<idAI*>(gameLocal.entities[collision.c.entityNum]);
+	bool caught = false;
 	if (hitEntity) {
 		if (strstr(hitEntity->GetName(), "monster") != nullptr) {
 			if (owner && owner->IsType(idPlayer::GetClassType())) {
 				idPlayer* player = gameLocal.GetLocalPlayer();
-				player->MonCatch(hitEntity, player);  // Pass the hit entity
-				hitEntity->PostEventMS(&EV_Remove, 0);
+				caught = player->MonCatch(hitEntity, player);  // Pass the hit entity
+				if (caught) hitEntity->PostEventMS(&EV_Remove, 0);
 			};
 		}
 	}

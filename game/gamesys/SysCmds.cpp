@@ -2922,29 +2922,29 @@ void Cmd_AddIcon_f( const idCmdArgs& args ) {
 
 // RITUAL BEGIN
 // squirrel: Mode-agnostic buymenus
-void Cmd_ToggleBuyMenu_f( const idCmdArgs& args ) {
+void Cmd_ToggleBuyMenu_f(const idCmdArgs& args) {
 	idPlayer* player = gameLocal.GetLocalPlayer();
-	if ( player && player->CanBuy() )
+	if (player && player->CanBuy())
 	{
 		gameLocal.mpGame.OpenLocalBuyMenu();
 	}
 }
 
-void Cmd_BuyItem_f( const idCmdArgs& args ) {
+void Cmd_BuyItem_f(const idCmdArgs& args) {
 	idPlayer* player = gameLocal.GetLocalPlayer();
-	if ( !player ) {
-		common->Printf( "ERROR: Cmd_BuyItem_f() failed, since GetLocalPlayer() was NULL.\n", player );
+	if (!player) {
+		common->Printf("ERROR: Cmd_BuyItem_f() failed, since GetLocalPlayer() was NULL.\n", player);
 		return;
 	}
 
-	player->GenerateImpulseForBuyAttempt( args.Argv(1) );
+	player->GenerateImpulseForBuyAttempt(args.Argv(1));
 }
 // RITUAL END
 
 void Cmd_ToggleHelp_f(const idCmdArgs& args) {
 	idPlayer* player = gameLocal.GetLocalPlayer();
 	idUserInterface* hud = player->hud;
-	bool open = hud->GetStateBool("helpOpen","false");
+	bool open = hud->GetStateBool("helpOpen", "false");
 	if (!open) {
 		hud->HandleNamedEvent("openHelp");
 		hud->SetStateBool("helpOpen", true);
@@ -2955,22 +2955,9 @@ void Cmd_ToggleHelp_f(const idCmdArgs& args) {
 	}
 }
 
-void Cmd_ToggleShop_f(const idCmdArgs& args) {
-	idPlayer* player = gameLocal.GetLocalPlayer();
-	idUserInterface* hud = player->hud;
-	bool open = hud->GetStateBool("shopOpen", "0");
-	if (!open) {
-		hud->HandleNamedEvent("openShop");
-	}
-	else {
-		hud->HandleNamedEvent("closeShop");
-	}
-}
-
-
 void Cmd_MonCommand_f(const idCmdArgs& args) {
 	idPlayer* player = gameLocal.GetLocalPlayer();
-	int monsout=0;
+	int monsout = 0;
 	for (int i; i < player->moncount; i++) {
 		if (player->monout[i]) {
 			monsout++;
@@ -2981,7 +2968,7 @@ void Cmd_MonCommand_f(const idCmdArgs& args) {
 		return;
 	}
 	player->switchHUD();
-	
+
 }
 
 void Cmd_MonCall_f(const idCmdArgs& args) {
@@ -3001,6 +2988,78 @@ void Cmd_MonCall_f(const idCmdArgs& args) {
 	}
 }
 
+idList<int> entNum;
+
+void Cmd_TestSpawn_f(const idCmdArgs& args) {
+	idPlayer* player = gameLocal.GetLocalPlayer();
+	idEntity* monster;
+	idDict spawnArgs;
+	idList<idStr> monsters;
+	/*monsters.Append("monster_strogg_marine"); monsters.Append("monster_strogg_hover"); monsters.Append("monster_gunner"); monsters.Append("monster_grunt");
+	monsters.Append("monster_strogg_marine");*/
+	monsters.Append("monster_berserker"); monsters.Append("monster_gladiator"); monsters.Append("monster_strogg_hover"); monsters.Append("monster_scientist");
+	monsters.Append("monster_iron_maiden");
+	for (int i = 0; i < monsters.Num(); i++) {
+		spawnArgs.Set("classname", monsters[i]);
+		idVec3 spawnPos = player->GetPhysics()->GetOrigin() + (player->viewAngles.ToForward() * 100);
+		spawnArgs.SetVector("origin", spawnPos);
+		idAngles angles = player->GetPhysics()->GetAxis().ToAngles();
+		spawnArgs.SetVector("angles", angles.ToForward());
+		spawnArgs.Set("passive", "1");
+		gameLocal.SpawnEntityDef(spawnArgs, &monster);
+		entNum.Append(monster->entityNumber);
+	}
+}
+
+void Cmd_TestAction_f(const idCmdArgs& args) {
+	idPlayer* player = gameLocal.GetLocalPlayer();  // Get the player entity
+	if (!player) {
+		return;  // No player found
+	}
+
+	idAI* closestMonster = nullptr;
+	float closestDistance = idMath::INFINITY;
+
+	// Loop through all entities in the game
+	for (int i = 0; i < gameLocal.num_entities; i++) {
+		idEntity* ent = gameLocal.entities[i];
+		if (entNum[0] == i) {
+			continue;
+		}
+
+		if (ent && ent->IsType(idAI::GetClassType()) && ent->health > 0 && !ent->IsHidden()) {
+			if (strstr(ent->GetName(), "monster") == nullptr) {
+				continue;
+			}
+			idAI* monster = static_cast<idAI*>(ent); // Cast entity to AI type
+
+			// Calculate distance to the player
+			float distance = (monster->GetPhysics()->GetOrigin() - player->GetPhysics()->GetOrigin()).Length();
+
+			// If it's the closest so far, update our closest monster
+			if (distance < closestDistance) {
+				closestDistance = distance;
+				closestMonster = monster;
+			}
+		}
+	}
+	if (closestMonster) {
+		gameLocal.Printf("Closest monster to player: %s at %s\n",
+			closestMonster->GetName(),
+			closestMonster->GetPhysics()->GetOrigin().ToString()
+		);
+	}
+	for (int i = 0; i < entNum.Num(); i++) {
+		idEntity* monsterout = gameLocal.entities[entNum[i]];
+		if (!monsterout) {
+			return;
+		}
+		idAI* monster = dynamic_cast<idAI*>(monsterout);
+
+		monster->enemy.ent = closestMonster;
+		monster->PostEventMS(&EV_SafeRemove, 5000);
+	}
+}
 
 void Cmd_PlayerEmote_f( const idCmdArgs& args ) {
 	if( gameLocal.GetLocalPlayer() == NULL ) {
@@ -3294,11 +3353,11 @@ void idGameLocal::InitConsoleCommands( void ) {
 	cmdSystem->AddCommand( "buy",					Cmd_BuyItem_f,				CMD_FL_GAME,				"Buy an item (if in a buy zone and the game type supports it)" );
 // RITUAL END
 	cmdSystem->AddCommand("togglehelp",				Cmd_ToggleHelp_f,			CMD_FL_GAME,				"Toggle help menu");
-	cmdSystem->AddCommand("toggleshop",				Cmd_ToggleShop_f,			CMD_FL_GAME,				"Toggle shop menu");
 	cmdSystem->AddCommand("monoptions",				Cmd_MonCommand_f,			CMD_FL_GAME,				"Send commands to monsters");
 	cmdSystem->AddCommand("moncall",				Cmd_MonCall_f,				CMD_FL_GAME,				"Send and recall Monster");
 
-
+	cmdSystem->AddCommand("testspawn",				Cmd_TestSpawn_f,				CMD_FL_GAME,				"Test Spawn");
+	cmdSystem->AddCommand("testaction",				Cmd_TestAction_f,				CMD_FL_GAME,				"Test Actions");
 }
 
 /*

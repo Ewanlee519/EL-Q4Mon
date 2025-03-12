@@ -3427,6 +3427,14 @@ void idPlayer::UpdateHudStats( idUserInterface *_hud ) {
 		_hud->SetStateFloat	( "player_armorpct", idMath::ClampFloat ( 0.0f, 1.0f, (float)inventory.armor / (float)inventory.maxarmor ) );
 		_hud->HandleNamedEvent ( "updateArmor" );
 	}
+
+	if (monsters[currmon] != NULL && hudStatus != 0) {
+		if (monsters[currmon]->health < 1) {
+			MonsterKilled(monsters[currmon], currmon);
+		}
+		_hud->SetStateInt("monster_health", monsters[currmon]->health);
+		_hud->SetStateInt("monster_maxhealth", max_healths[currmon]);
+	}
 	
 	// Boss bar
 	if ( _hud->State().GetInt ( "boss_health", "-1" ) != (bossEnemy ? bossEnemy->health : -1) ) {
@@ -8525,9 +8533,31 @@ void idPlayer::PerformImpulse( int impulse ) {
 		}
 	}
 
+	if (impulse == IMPULSE_19) {
+		if (hudStatus != 0 ) {
+			return;
+		}
+		moncount -= 1;
+		if (monout[moncount]) {
+			MonRecall(moncount, moninfo, monsters);
+		}
+		monsters[moncount] = NULL;
+		moninfo[moncount].Clear();
+		monid[moncount] = NULL;
+		max_healths[moncount] = NULL;
+		idStr num = idStr(moncount + 1);
+		idStr command = "updateMon"; command.Append(num);
+		idStr monname = "mon"; monname.Append(num);
+		gameLocal.Printf("Strings: %s, %s\n", command.c_str(), monname.c_str());
+		gameLocal.GetLocalPlayer()->hud->SetStateString(monname.c_str(), "EMPTY");
+		gameLocal.GetLocalPlayer()->hud->HandleNamedEvent(command.c_str());
+
+		return;
+	}
+
 	if (impulse == IMPULSE_20) {
 		switch (hudStatus) {
-		case 0:
+		case 0:	
 			return;
 		case 1:
 			hudStatus = 0;
@@ -8541,6 +8571,7 @@ void idPlayer::PerformImpulse( int impulse ) {
 		}
 	}
 
+	idEntity* monster; bool flag = false;
 	if (impulse == IMPULSE_21) {
 		if (hudStatus==1) {
 			if (guinum == 3) {
@@ -8560,6 +8591,8 @@ void idPlayer::PerformImpulse( int impulse ) {
 			case 0:
 				//Handle the attack
 				hudStatus = 1;
+				monster = monsters[currmon];
+				MonsterAttack(monster, attack_inp);
 				hud->HandleNamedEvent("backOption");
 				break;
 			case 1:
@@ -8567,7 +8600,9 @@ void idPlayer::PerformImpulse( int impulse ) {
 					return;
 				}
 				MonRecall(currmon, moninfo, monsters);
-				MonChoose(monstate, moninfo, monsters);
+				if(!MonChoose(monstate, moninfo, monsters)){
+					return;
+				}
 				hudStatus = 1;
 				hud->HandleNamedEvent("backOption");
 				break;
@@ -8628,21 +8663,21 @@ void idPlayer::PerformImpulse( int impulse ) {
 			centerView.Init(gameLocal.time, 200, viewAngles.pitch, 0);
 			break;
 		}
-		case IMPULSE_19: {
-/*		
-			// when we're not in single player, IMPULSE_19 is used for showScores
-			// otherwise it does IMPULSE_12 (PDA)
-			if ( !gameLocal.isMultiplayer ) {
-				if ( !objectiveSystemOpen ) {
-					if ( weapon ) {
-						weapon->Hide ();
-					}
-				}
-				ToggleMap();
-			}
-*/
-			break;
-		}
+//		case IMPULSE_19: {
+///*		
+//			// when we're not in single player, IMPULSE_19 is used for showScores
+//			// otherwise it does IMPULSE_12 (PDA)
+//			if ( !gameLocal.isMultiplayer ) {
+//				if ( !objectiveSystemOpen ) {
+//					if ( weapon ) {
+//						weapon->Hide ();
+//					}
+//				}
+//				ToggleMap();
+//			}
+//*/
+//			break;
+//		}
 		/*case IMPULSE_20: {
  			if ( gameLocal.isClient || entityNumber == gameLocal.localClientNum ) {
  				gameLocal.mpGame.ToggleTeam( );
@@ -11418,7 +11453,7 @@ void idPlayer::SetInfluenceLevel( int level ) {
 // RAVEN BEGIN
 // jnewquist: Use accessor for static class type 
 				if ( ent->IsType( idProjectile::GetClassType() ) ) {
-// RAVEN END
+// RAVEN END		
 					// remove all projectiles
 					ent->PostEventMS( &EV_Remove, 0 );
 				}
@@ -14206,9 +14241,9 @@ int idPlayer::CanSelectWeapon(const char* weaponName)
 // Quakemon Code
 
 
-void idPlayer::MonCatch(idEntity* hitEntity, idPlayer* player) {
+bool idPlayer::MonCatch(idEntity* hitEntity, idPlayer* player) {
 	if (moncount > 5) { 
-		return;
+		return false;
 	}
 	idDict spawnArgs;
 	idEntity* newEnemy;
@@ -14223,7 +14258,7 @@ void idPlayer::MonCatch(idEntity* hitEntity, idPlayer* player) {
 		caught = moninfo[i].GetString("classname", "");
 		if (strcmp(classname, caught)==0) {
 			gameLocal.Printf("Monster already caught!\n");
-			return;
+			return false;
 		}
 	}
 	spawnArgs.Set("classname", classname);
@@ -14240,54 +14275,40 @@ void idPlayer::MonCatch(idEntity* hitEntity, idPlayer* player) {
 	idAngles angles = player->GetPhysics()->GetAxis().ToAngles();
 	spawnArgs.SetVector("angles", angles.ToForward());
 	spawnArgs.Set("passive", "1");
+	gameLocal.Printf("Max health of caught entity: %d\n", hitEntity->health);
+	spawnArgs.SetInt("health", hitEntity->health);
 
 	// Updates the names of the monsters in the HUD
-	switch (moncount) {
-	case 0:
-		gameLocal.GetLocalPlayer()->hud->SetStateString("mon1", hudName.c_str());
-		gameLocal.GetLocalPlayer()->hud->HandleNamedEvent("updateMon1");
-		break;
-	case 1:
-		gameLocal.GetLocalPlayer()->hud->SetStateString("mon2", hudName.c_str());
-		gameLocal.GetLocalPlayer()->hud->HandleNamedEvent("updateMon2");
-		break;
-	case 2:
-		gameLocal.GetLocalPlayer()->hud->SetStateString("mon3", hudName.c_str());
-		gameLocal.GetLocalPlayer()->hud->HandleNamedEvent("updateMon3");
-		break;
-	case 3:
-		gameLocal.GetLocalPlayer()->hud->SetStateString("mon4", hudName.c_str());
-		gameLocal.GetLocalPlayer()->hud->HandleNamedEvent("updateMon4");
-		break;
-	case 4:
-		gameLocal.GetLocalPlayer()->hud->SetStateString("mon5", hudName.c_str());
-		gameLocal.GetLocalPlayer()->hud->HandleNamedEvent("updateMon5");
-		break;
-	case 5:
-		gameLocal.GetLocalPlayer()->hud->SetStateString("mon6", hudName.c_str());
-		gameLocal.GetLocalPlayer()->hud->HandleNamedEvent("updateMon6");
-		break;
-	default:
-		break;
-	}
+	idStr num = idStr(moncount + 1);
+	idStr command = "updateMon"; command.Append(num);
+	idStr monname = "mon"; monname.Append(num);
+	gameLocal.Printf("Strings: %s, %s\n", command.c_str(), monname.c_str());
+	gameLocal.GetLocalPlayer()->hud->SetStateString(monname.c_str(), hudName.c_str());
+	gameLocal.GetLocalPlayer()->hud->HandleNamedEvent(command.c_str());
 
 	// Catches the monster and then stores the values for spawning
 	hitEntity->RemoveTarget(hitEntity);
 	monout[moncount] = false;
 	moninfo[moncount] = spawnArgs;
+	monDead[moncount] = false;
+	max_healths[moncount] = hitEntity->health;
 
 	// Updates the count of monsters, does not go over 6
 	moncount = (moncount > 5) ? 6 : moncount + 1;
-	
+
+	return true;
 }
 
-void idPlayer::MonChoose(int num, idDict* info, idEntity** monsters) {
+bool idPlayer::MonChoose(int num, idDict* info, idEntity** monsters) {
 	if(moncount == 0) {
-		gameLocal.Printf("No monsters caught yet!\n");
-		return;
+		gameLocal.Printf("Monster can not be sent out!\n");
+		return false;
 	}
 	if(num>5){
-		return;
+		return false;
+	}
+	if (monDead[num] == true) {
+		return false;
 	}
 	idEntity* monster;
 	idDict spawnArgs;
@@ -14305,6 +14326,7 @@ void idPlayer::MonChoose(int num, idDict* info, idEntity** monsters) {
 		player->monout[num] = true;
 		player->currmon = num;
 	}
+	return true;
 }
 
 void idPlayer::MonRecall(int num, idDict* info, idEntity** monsters) {
@@ -14320,7 +14342,9 @@ void idPlayer::MonRecall(int num, idDict* info, idEntity** monsters) {
 
 	idEntity* monsterout = gameLocal.entities[player->monid[num]];
 	if (monsterout) {
-		monsterout->PostEventMS(&EV_Remove, 0);
+		player->moninfo[num].SetInt("health", monsterout->health);
+		monsterout->StopAllEffects(true);
+		monsterout->PostEventMS(&EV_SafeRemove, 0);
 		gameLocal.Printf("Removed entity with entityNumber: %d\n", player->monid[num]);
 	}
 	player->monout[num] = false;
@@ -14367,6 +14391,36 @@ void idPlayer::MonOptions(int input) {
 	return;
 }
 
+void idPlayer::MonsterAttack(idEntity* monster, int attack_inp) {
+	idAI* mon = dynamic_cast<idAI*>(monster);
+	idList<idStr> attacklist = mon->monsterAttacks;
+	switch (attack_inp) {
+	case 0:
+
+		break;
+	case 1:
+		if (attacklist.Num() < 2) {
+
+		}
+		break;
+	case 2:
+		if (attacklist.Num() < 3) {
+
+		}
+		break;
+	case 3:
+		if (attacklist.Num() < 4) {
+			mon->Damage(mon, mon, vec3_zero, "damage_explosion", 100, 0);
+			MonsterKilled(mon,currmon);
+			mon->PostEventMS(&EV_SafeRemove, 0);
+		}
+		break;
+	default:
+		break;
+	}
+	return;
+}
+
 void idPlayer::switchHUD() {
 	idPlayer* player = gameLocal.GetLocalPlayer();
 	idUserInterface* hud = player->hud;
@@ -14378,6 +14432,8 @@ void idPlayer::switchHUD() {
 	if (!open) {
 		hud->HandleNamedEvent("openHUD");
 		hud->SetStateBool("desktop::hudOpen", true);
+		hud->SetStateInt("monster_health", player->monsters[currmon]->health);
+		hud->SetStateInt("monster_maxhealth", player->max_healths[currmon]);
 		player->hudStatus = 0;
 	}
 	else {
@@ -14391,3 +14447,16 @@ void idPlayer::switchHUD() {
 	hud->StateChanged(gameLocal.time);
 }
 
+void idPlayer::MonsterKilled(idEntity* monster, int monNum) {
+	guinum = 1; hudStatus = 2;
+	idPlayer* player = gameLocal.GetLocalPlayer();
+	idUserInterface* hud = player->hud;
+
+	monDead[monNum] = true;
+	player->moninfo[monNum].SetInt("health", 0);
+
+	hud->SetStateInt("input", 1);
+	hud->HandleNamedEvent("optionInput");
+	hud->HandleNamedEvent("pickOption");
+	return;
+}

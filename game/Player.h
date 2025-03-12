@@ -374,8 +374,10 @@ public:
 	idDict					moninfo[6];
 	idEntity*				monsters[6];
 	bool					monout[6];
+	bool					monDead[6];
 	int						moncount;
 	int						monid[6];
+	int						max_healths[6];
 	int						monstate;
 	int						currmon;
 	int						guinum; // 0 is attack, 1 is switch, 2 is items, 3 is run
@@ -633,9 +635,11 @@ public:
 	int						CanSelectWeapon				( const char* weaponName );
 	int						GetItemCost(const char* itemName);
 // RITUAL END
-	void					MonCatch(idEntity* hitEntity, idPlayer* player);
-	void					MonChoose(int num, idDict* info, idEntity** monsters);
+	bool					MonCatch(idEntity* hitEntity, idPlayer* player);
+	bool					MonChoose(int num, idDict* info, idEntity** monsters);
 	void					MonRecall(int num, idDict* info, idEntity** monsters);
+	void					MonsterAttack(idEntity* monster, int attack_inp);
+	void					MonsterKilled(idEntity* monster, int monNum);
 	void					SelectMonster(int state);
 	void					MonOptions(int input);
 	void					switchHUD();

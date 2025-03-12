@@ -483,6 +483,9 @@ public:
 
 	idLinkList<idAI>		simpleThinkNode;
 
+	//Quakemon
+	idList<idStr>			monsterAttacks;
+
 	// navigation
 	idAAS*					aas;
 	idAASCallback*			aasFind;

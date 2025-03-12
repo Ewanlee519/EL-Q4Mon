@@ -48,6 +48,9 @@ rvMonsterFailedTransfer::Spawn
 void rvMonsterFailedTransfer::Spawn ( void ) {
 	LoadAF ( "ragdoll_legs", true );
 	LoadAF ( NULL, true );
+
+	monsterAttacks.Append("range_attack3");
+	monsterAttacks.Append("melee_attack2");
 }
 
 /*

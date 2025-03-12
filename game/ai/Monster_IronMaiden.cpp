@@ -90,6 +90,9 @@ void rvMonsterIronMaiden::Spawn ( void ) {
 	InitSpawnArgsVariables();
 
 	PlayEffect ( "fx_dress", animator.GetJointHandle ( spawnArgs.GetString ( "joint_laser", "cog_bone" ) ), true );
+
+	monsterAttacks.Append("Torso_BansheeAttack");
+	monsterAttacks.Append("melee_attack1");
 }
 
 /*

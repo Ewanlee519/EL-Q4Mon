@@ -72,6 +72,9 @@ void rvMonsterGrunt::Spawn ( void ) {
 	if ( spawnArgs.GetBool ( "preinject" ) ) {
 		RageStart ( );
 	}	
+
+	monsterAttacks.Append("Torso_Enrage");
+	monsterAttacks.Append("melee_attack2");
 }
 
 /*

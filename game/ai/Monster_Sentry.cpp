@@ -93,6 +93,9 @@ void rvMonsterSentry::Spawn ( void ) {
 
 	kamakaziHealth = spawnArgs.GetInt ( "kamakazi_Health", va("%d", health / 2) );
 	nextChatterTime = 0;
+
+	monsterAttacks.Append("Torso_KamakaziAttack");
+	monsterAttacks.Append("range_attack");
 } 
 
 /*

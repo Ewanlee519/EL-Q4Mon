@@ -8565,7 +8565,8 @@ void idPlayer::PerformImpulse( int impulse ) {
 			return;
 		case 3:
 			hudStatus = 2;
-			hud->HandleNamedEvent("backOption");
+			hud->SetStateInt("revtoggle", 0);
+			hud->HandleNamedEvent("reviveSelect");
 			return;
 		}
 	}
@@ -8609,7 +8610,6 @@ void idPlayer::PerformImpulse( int impulse ) {
 				break;
 			case 2:
 				//Use an item
-				hudStatus = 1;
 				monster = monsters[currmon];
 				MonsterItem(monster, item_inp, currmon);
 				break;
@@ -14333,6 +14333,7 @@ bool idPlayer::MonChoose(int num, idDict* info, idEntity** monsters) {
 	idPlayer* player = gameLocal.GetLocalPlayer();
 
 	idVec3 spawnPos = player->GetPhysics()->GetOrigin() + (player->viewAngles.ToForward() * 100);
+	spawnPos.z += 50.0;
 	spawnArgs.SetVector("origin", spawnPos);
 	idAngles angles = player->GetPhysics()->GetAxis().ToAngles();
 	spawnArgs.SetVector("angles", angles.ToForward());
@@ -14452,47 +14453,40 @@ void idPlayer::MonsterItem(idEntity* monster, int item_inp, int monNum) {
 
 void idPlayer::MonsterAttack(idEntity* monster, int attack_inp) {
 	idAI* mon = dynamic_cast<idAI*>(monster);
-	idList<idStr> attacklist = mon->monsterAttacks;
-	idStr attack; const idDict* meleeDict;
+	idList<idStr> attacks = mon->monsterAttacks;
+	idPlayer* player = gameLocal.GetLocalPlayer();
+	const idDict* meleeDict;
 	switch (attack_inp) {
 	case 0:
-		if (attacklist.Num() == 0) {
+		if (attacks[0].IsEmpty()) {
 			break;
 		}
-		attack = attacklist[0];
-		mon->SetState(mon->monsterAttacks[0].c_str());
+		if (attacks[0].HasUpper()) {
+			mon->SetState(attacks[0].c_str());
+		}
+		else {
+			mon->ScriptedAnim(attacks[0].c_str(), 10, false, true);
+		}
 		break;
 	case 1:
-		if (attacklist.Num() < 2) {
+		if (attacks[1].IsEmpty()) {
 			break;
 		}
-		//attack = attacklist[1];
-		//mon->Event_AttackMelee("melee_left");
-		meleeDict = gameLocal.FindEntityDefDict(mon->spawnArgs.GetString("def_attack_melee_left"), false);
-		if (!meleeDict) {
-			gameLocal.Printf("ERROR: Attack definition for 'melee_left' not found!\n");
-			return;
+		if (attacks[1].HasUpper()) {
+			mon->SetState(attacks[1].c_str());
 		}
-		mon->AttackMelee("melee_left", meleeDict);
-
-		//mon->SetState(mon->monsterAttacks[1].c_str());
+		else {
+			mon->ScriptedAnim(attacks[1].c_str(), 10, false, true);
+		}
 		break;
 	case 2:
-		if (attacklist.Num() < 3) {
-			break;
-		}
-		attack = attacklist[2];
-		mon->SetState(mon->monsterAttacks[2].c_str());
+		mon->FaceEntity(player);
+		mon->ScriptedMove(player, 70.0, true);
 		break;
 	case 3:
-		if (attacklist.Num() < 4) {
-			mon->Damage(mon, mon, vec3_zero, "damage_explosion", 100, 0);
-			MonsterKilled(mon,currmon);
-			mon->PostEventMS(&EV_SafeRemove, 0);
-			break;
-		}
-		attack = attacklist[3];
-		mon->SetState(mon->monsterAttacks[3].c_str());
+		mon->Damage(mon, mon, vec3_zero, "damage_explosion", 100, 0);
+		mon->Killed(mon, mon, 10, vec3_zero, 0);
+		MonsterKilled(mon, currmon);
 		break;
 	default:
 		break;
@@ -14527,8 +14521,6 @@ void idPlayer::switchHUD() {
 }
 
 void idPlayer::MonsterKilled(idEntity* monster, int monNum) {
-	gameLocal.Printf("Monster %d is dead\n", monNum);
-	
 	guinum = 1; hudStatus = 2;
 	idPlayer* player = gameLocal.GetLocalPlayer();
 	idUserInterface* hud = player->hud;

@@ -2964,7 +2964,7 @@ void Cmd_MonCommand_f(const idCmdArgs& args) {
 		}
 	}
 	if (monsout != 1) {
-		gameLocal.Printf("Only 1 monster can be commanded at a time!");
+		gameLocal.Printf("Only 1 monster can be commanded at a time!\n");
 		return;
 	}
 	player->switchHUD();
@@ -2995,7 +2995,7 @@ void Cmd_TestSpawn_f(const idCmdArgs& args) {
 	idEntity* monster;
 	idDict spawnArgs;
 	idList<idStr> monsters;
-	/*monsters.Append("monster_gunner"); monsters.Append("monster_repair_bot"); monsters.Append("monster_sentry"); monsters.Append("monster_failed_transfer");*/
+	monsters.Append("monster_gunner"); monsters.Append("monster_repair_bot"); monsters.Append("monster_sentry"); monsters.Append("monster_failed_transfer");
 	monsters.Append("monster_berserker"); monsters.Append("monster_gladiator"); monsters.Append("monster_strogg_marine"); monsters.Append("monster_scientist");
 	monsters.Append("monster_iron_maiden"); monsters.Append("monster_grunt");
 	for (int i = 0; i < monsters.Num(); i++) {

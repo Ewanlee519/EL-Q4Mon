@@ -93,6 +93,9 @@ void rvMonsterGunner::Spawn ( void ) {
 	actionTimerSideStep.Init ( spawnArgs, "actionTimer_sideStep" );
 	
 	InitSpawnArgsVariables();
+
+	monsterAttacks.Append("Torso_NailgunAttack");
+	monsterAttacks.Append("melee_attack1");
 }
 
 /*

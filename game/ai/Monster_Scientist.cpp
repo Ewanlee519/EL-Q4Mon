@@ -41,6 +41,9 @@ rvMonsterScientist::Spawn
 */
 void rvMonsterScientist::Spawn ( void ) {
 	PlayEffect ( "fx_fly", animator.GetJointHandle ( "effects_bone" ), true );
+
+	monsterAttacks.Append("range_attack_grenade");
+	monsterAttacks.Append("melee_attack1");
 } 
 
 /*

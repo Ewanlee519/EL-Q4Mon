@@ -86,6 +86,9 @@ rvMonsterRepairBot::Spawn
 */
 void rvMonsterRepairBot::Spawn ( void ) {
 	InitSpawnArgsVariables();
+
+	monsterAttacks.Append("repair");
+	monsterAttacks.Append("idle_sleepy");
 }
 
 /*

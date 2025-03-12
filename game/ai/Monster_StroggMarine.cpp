@@ -104,9 +104,7 @@ void rvMonsterStroggMarine::Spawn ( void ) {
 	actionReload.Init  ( spawnArgs, "action_reload",	NULL, 0 );
 
 	monsterAttacks.Append("Torso_RangedAttack");
-	monsterAttacks.Append("Torso_RollAttack");
-	monsterAttacks.Append("Torso_MovingRollAttack");
-	monsterAttacks.Append("Torso_SprayAttack");
+	monsterAttacks.Append("melee_attack");
 
 	InitSpawnArgsVariables();
 

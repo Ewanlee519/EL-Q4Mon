@@ -132,6 +132,10 @@ void rvMonsterGladiator::Spawn ( void ) {
 	{
 		mPostWeaponDestroyed.Init( func );
 	}
+
+	monsterAttacks.Append("Torso_RailgunAttack");
+	monsterAttacks.Append("melee_attack");
+
 }
 
 /*

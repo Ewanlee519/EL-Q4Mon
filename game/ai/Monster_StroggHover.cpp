@@ -467,16 +467,16 @@ void rvMonsterStroggHover::Think ( void ) {
 	// RAVEN END
 
 			// Start the dust effect if not already started
-			if ( !effectDust ) {
-				effectDust = gameLocal.PlayEffect ( gameLocal.GetEffect ( spawnArgs, "fx_dust" ), tr.endpos, tr.c.normal.ToMat3(), true );
-			}
-			
-			// If the effect is playing we should update its attenuation as well as its origin and axis
-			if ( effectDust ) {
-				effectDust->Attenuate ( 1.0f - idMath::ClampFloat ( 0.0f, 1.0f, (tr.endpos - origin).LengthFast ( ) / 127.0f ) );
-				effectDust->SetOrigin ( tr.endpos );
-				effectDust->SetAxis ( tr.c.normal.ToMat3() );
-			}
+			//if ( !effectDust ) {
+			//	effectDust = gameLocal.PlayEffect ( gameLocal.GetEffect ( spawnArgs, "fx_dust" ), tr.endpos, tr.c.normal.ToMat3(), true );
+			//}
+			//
+			//// If the effect is playing we should update its attenuation as well as its origin and axis
+			//if ( effectDust ) {
+			//	effectDust->Attenuate ( 1.0f - idMath::ClampFloat ( 0.0f, 1.0f, (tr.endpos - origin).LengthFast ( ) / 127.0f ) );
+			//	effectDust->SetOrigin ( tr.endpos );
+			//	effectDust->SetAxis ( tr.c.normal.ToMat3() );
+			//}
 			
 			// If the hover effect is playing we can set its end origin to the ground
 			/*

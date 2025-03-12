@@ -1137,6 +1137,7 @@ idPlayer::idPlayer() {
 	hudStatus				= 0;
 	attack_inp				= 0;
 	item_inp				= 0;
+	fullrev					= false;
 
 	spectating				= false;
 	spectator				= 0;
@@ -8487,7 +8488,6 @@ void idPlayer::PerformImpulse( int impulse ) {
 			MonOptions(guinum);
 			return;
 		case 2:
-			gameLocal.Printf("This is the current guinum: %d\n", guinum);
 			switch (guinum) {
 			case 0:
 				if(impulse > IMPULSE_3) {
@@ -8515,6 +8515,14 @@ void idPlayer::PerformImpulse( int impulse ) {
 			default:
 				return;;
 			}
+		case 3:
+			if (impulse > moncount - 1 || moncount <= 1) {
+				return;
+			}
+			monstate = impulse;
+			SelectMonster(monstate);
+			return;
+			break;
 		default:
 			return;
 		}
@@ -8555,12 +8563,19 @@ void idPlayer::PerformImpulse( int impulse ) {
 			hudStatus = 1;
 			hud->HandleNamedEvent("backOption");
 			return;
+		case 3:
+			hudStatus = 2;
+			hud->HandleNamedEvent("backOption");
+			return;
 		}
 	}
 
-	idEntity* monster; bool flag = false;
+	idEntity* monster;
 	if (impulse == IMPULSE_21) {
-		if (hudStatus==1) {
+		switch (hudStatus) {
+		case 0:
+			return;
+		case 1:
 			if (guinum == 3) {
 				hudStatus = 0;
 				hud->HandleNamedEvent("openHUD");
@@ -8572,8 +8587,7 @@ void idPlayer::PerformImpulse( int impulse ) {
 				hud->HandleNamedEvent("pickOption");
 			}
 			return;
-		}
-		else if (hudStatus==2){
+		case 2:
 			switch (guinum) {
 			case 0:
 				//Handle the attack
@@ -8587,7 +8601,7 @@ void idPlayer::PerformImpulse( int impulse ) {
 					return;
 				}
 				MonRecall(currmon, moninfo, monsters);
-				if(!MonChoose(monstate, moninfo, monsters)){
+				if (!MonChoose(monstate, moninfo, monsters)) {
 					return;
 				}
 				hudStatus = 1;
@@ -8596,10 +8610,32 @@ void idPlayer::PerformImpulse( int impulse ) {
 			case 2:
 				//Use an item
 				hudStatus = 1;
-				hud->HandleNamedEvent("backOption");
+				monster = monsters[currmon];
+				MonsterItem(monster, item_inp, currmon);
 				break;
 			default:
 				break;
+			}
+			return;
+		case 3:
+			if (monDead[monstate] == false) {
+				return;
+			}
+			else {
+				if (moninfo[monstate].GetInt("health") > 0) {
+					return;
+				}
+				hud->SetStateInt("revtoggle", 0);
+				hud->HandleNamedEvent("reviveSelect");
+				hudStatus = 1;
+				if (fullrev) {
+					moninfo[monstate].SetInt("health", max_healths[monstate]);
+				}
+				else {
+					moninfo[monstate].SetInt("health", max_healths[monstate]/2);
+				}
+				monDead[monstate] = false;
+				hud->HandleNamedEvent("backOption");
 			}
 			return;
 		}
@@ -14254,14 +14290,7 @@ bool idPlayer::MonCatch(idEntity* hitEntity, idPlayer* player) {
 	hudName.ToUpper();
 	gameLocal.Printf("Monster caught: %s!\n", hudName.c_str());
 
-	// Get existing entity's position and modify it slightly
-	idVec3 spawnPos = player->GetPhysics()->GetOrigin() + (player->viewAngles.ToForward()*100); // Spawn 100 units to the right
-	spawnArgs.SetVector("origin", spawnPos);
-
-	// Get existing angles and keep the same rotation
-	idAngles angles = player->GetPhysics()->GetAxis().ToAngles();
-	spawnArgs.SetVector("angles", angles.ToForward());
-	spawnArgs.Set("passive", "0");
+	spawnArgs.Set("passive", "1");
 	gameLocal.Printf("Max health of caught entity: %d\n", hitEntity->health);
 	spawnArgs.SetInt("health", hitEntity->health);
 
@@ -14294,7 +14323,7 @@ bool idPlayer::MonChoose(int num, idDict* info, idEntity** monsters) {
 	if(num>5){
 		return false;
 	}
-	if (monDead[num] == true) {
+	if (monDead[num] == true || moninfo[num].GetInt("health")==0) {
 		return false;
 	}
 	idEntity* monster;
@@ -14303,8 +14332,10 @@ bool idPlayer::MonChoose(int num, idDict* info, idEntity** monsters) {
 	spawnArgs = info[num];
 	idPlayer* player = gameLocal.GetLocalPlayer();
 
-	idVec3 spawnPos = player->GetPhysics()->GetOrigin() + idVec3(0, 100, 0); // Spawn 100 units to the right
+	idVec3 spawnPos = player->GetPhysics()->GetOrigin() + (player->viewAngles.ToForward() * 100);
 	spawnArgs.SetVector("origin", spawnPos);
+	idAngles angles = player->GetPhysics()->GetAxis().ToAngles();
+	spawnArgs.SetVector("angles", angles.ToForward());
 
 	gameLocal.SpawnEntityDef(spawnArgs, &monster);
 	if (monster) {
@@ -14375,6 +14406,47 @@ void idPlayer::MonOptions(int input) {
 	player->hud->SetStateInt("input", input);
 	int value = player->hud->GetStateInt("input");
 	player->hud->HandleNamedEvent("optionInput");
+	return;
+}
+
+void idPlayer::MonsterItem(idEntity* monster, int item_inp, int monNum) {
+	idEntity* mon = monster;
+	idPlayer* player = gameLocal.GetLocalPlayer();
+	idUserInterface* hud = player->hud;
+	switch (item_inp) {
+	case 0:
+		if (mon->health == max_healths[monNum])  {
+			break;
+		}
+		mon->health = mon->health + (max_healths[monNum]/8);
+		hud->HandleNamedEvent("backOption"); hudStatus = 1;
+		break;
+	case 1:
+		if (mon->health == max_healths[monNum]) {
+			break;
+		}
+		mon->health = mon->health + (max_healths[monNum]/4);
+		hud->HandleNamedEvent("backOption"); hudStatus = 1;
+		break;
+	case 2:
+		mon->health = max_healths[monNum];
+		hud->HandleNamedEvent("backOption"); hudStatus = 1;
+		break;
+	case 3:
+		hudStatus = 3;
+		fullrev = false;
+		hud->SetStateInt("revtoggle", 1);
+		hud->HandleNamedEvent("reviveSelect");
+		break;
+	case 4:
+		hudStatus = 3;
+		fullrev = true;
+		hud->SetStateInt("revtoggle", 1);
+		hud->HandleNamedEvent("reviveSelect");
+		break;
+	default:
+		break;
+	}
 	return;
 }
 
@@ -14455,6 +14527,8 @@ void idPlayer::switchHUD() {
 }
 
 void idPlayer::MonsterKilled(idEntity* monster, int monNum) {
+	gameLocal.Printf("Monster %d is dead\n", monNum);
+	
 	guinum = 1; hudStatus = 2;
 	idPlayer* player = gameLocal.GetLocalPlayer();
 	idUserInterface* hud = player->hud;

@@ -375,13 +375,14 @@ public:
 	idEntity*				monsters[6];
 	bool					monout[6];
 	bool					monDead[6];
+	bool					fullrev;
 	int						moncount;
 	int						monid[6];
 	int						max_healths[6];
 	int						monstate;
 	int						currmon;
 	int						guinum; // 0 is attack, 1 is switch, 2 is items, 3 is run
-	int						hudStatus; // Or int hudStatus: 0 is HUD, 1 is Options, 2 is SelectedOpt
+	int						hudStatus; // Or int hudStatus: 0 is HUD, 1 is Options, 2 is SelectedOpt, 3 is Rev Opt
 	int						attack_inp;
 	int						item_inp;
 
@@ -639,6 +640,7 @@ public:
 	bool					MonChoose(int num, idDict* info, idEntity** monsters);
 	void					MonRecall(int num, idDict* info, idEntity** monsters);
 	void					MonsterAttack(idEntity* monster, int attack_inp);
+	void					MonsterItem(idEntity* monster, int item_inp, int monNum);
 	void					MonsterKilled(idEntity* monster, int monNum);
 	void					SelectMonster(int state);
 	void					MonOptions(int input);

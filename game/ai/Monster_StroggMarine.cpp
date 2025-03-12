@@ -4,8 +4,6 @@
 
 #include "../Game_local.h"
 
-
-
 //NOTE: actually a bit of a misnomer, as all Strogg Marine types use this class now...
 class rvMonsterStroggMarine : public idAI {
 public:
@@ -18,6 +16,7 @@ public:
 	void				Spawn							( void );
 	void				Save							( idSaveGame *savefile ) const;
 	void				Restore							( idRestoreGame *savefile );
+
 
 protected:
 
@@ -68,6 +67,7 @@ private:
 	stateResult_t		State_Torso_MovingRangedAttack	( const stateParms_t& parms );
 	stateResult_t		State_Torso_SprayAttack			( const stateParms_t& parms );
 
+
 	CLASS_STATES_PROTOTYPE ( rvMonsterStroggMarine );
 };
 
@@ -102,6 +102,11 @@ void rvMonsterStroggMarine::Spawn ( void ) {
 	actionSprayAttack.Init  ( spawnArgs, "action_sprayAttack",	"Torso_SprayAttack", AIACTIONF_ATTACK );
 	actionAngry.Init  ( spawnArgs, "action_angry",	NULL, 0 );
 	actionReload.Init  ( spawnArgs, "action_reload",	NULL, 0 );
+
+	monsterAttacks.Append("Torso_RangedAttack");
+	monsterAttacks.Append("Torso_RollAttack");
+	monsterAttacks.Append("Torso_MovingRollAttack");
+	monsterAttacks.Append("Torso_SprayAttack");
 
 	InitSpawnArgsVariables();
 
@@ -414,6 +419,8 @@ bool rvMonsterStroggMarine::CheckActions ( void ) {
 
 ===============================================================================
 */
+
+
 
 CLASS_STATES_DECLARATION ( rvMonsterStroggMarine )
 	STATE ( "Torso_RollAttack",			rvMonsterStroggMarine::State_Torso_RollAttack )

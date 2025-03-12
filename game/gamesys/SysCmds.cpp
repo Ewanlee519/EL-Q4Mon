@@ -3039,6 +3039,7 @@ void Cmd_TestAction_f(const idCmdArgs& args) {
 			// If it's the closest so far, update our closest monster
 			if (distance < closestDistance) {
 				closestDistance = distance;
+
 				closestMonster = monster;
 			}
 		}
@@ -3049,16 +3050,16 @@ void Cmd_TestAction_f(const idCmdArgs& args) {
 			closestMonster->GetPhysics()->GetOrigin().ToString()
 		);
 	}
-	for (int i = 0; i < entNum.Num(); i++) {
-		idEntity* monsterout = gameLocal.entities[entNum[i]];
-		if (!monsterout) {
-			return;
-		}
-		idAI* monster = dynamic_cast<idAI*>(monsterout);
-
-		monster->enemy.ent = closestMonster;
-		monster->PostEventMS(&EV_SafeRemove, 5000);
+	
+	idEntity* monsterout = player->monsters[0];
+	if (!monsterout) {
+		return;
 	}
+	idAI* monster = dynamic_cast<idAI*>(monsterout);
+	
+	monster->SetEnemy(closestMonster);
+	monster->SetState(monster->monsterAttacks[0].c_str());
+	player->MonRecall(0, player->moninfo, player->monsters);
 }
 
 void Cmd_PlayerEmote_f( const idCmdArgs& args ) {

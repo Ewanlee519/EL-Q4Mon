@@ -1072,6 +1072,7 @@ idAI::Event_AttackMelee
 */
 void idAI::Event_AttackMelee( const char* meleeName ) { 
 	const idDict* meleeDict;
+	gameLocal.Printf("MELEE WAS TRIGGERED\n");
 	meleeDict = gameLocal.FindEntityDefDict ( spawnArgs.GetString ( va("def_attack_%s", meleeName ) ), false );
 	if ( !meleeDict ) {
 		gameLocal.Error ( "missing meleeDef '%s' for ai entity '%s'", meleeName, GetName() );

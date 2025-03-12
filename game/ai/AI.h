@@ -1059,6 +1059,8 @@ public:
 	virtual bool			CheckAction_MeleeAttack				( rvAIAction* action, int animNum );
 	bool					CheckAction_LeapAttack				( rvAIAction* action, int animNum );
 	virtual bool			CheckAction_JumpBack				( rvAIAction* action, int animNum );
+	void					Event_AttackMelee					( const char *meleeDefName );
+
 
 	/*
 	===============================================================================
@@ -1103,8 +1105,6 @@ private:
 	void					Event_GetLeader						( void );
 
 	void					Event_Attack						( const char* attackName, const char* jointName );
-	void					Event_AttackMelee					( const char *meleeDefName );
-
 	void					Event_DirectDamage					( idEntity *damageTarget, const char *damageDefName );
 	void					Event_RadiusDamageFromJoint			( const char *jointname, const char *damageDefName );
 	void					Event_CanBecomeSolid				( void );

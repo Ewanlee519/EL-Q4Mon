@@ -1847,7 +1847,6 @@ void idPlayer::Spawn( void ) {
 		// load HUD
 		hud = NULL;
 		mphud = NULL;
-		monhud = NULL;
  		
 		overlayHud = NULL;
 		overlayHudTime = 0;
@@ -1868,13 +1867,6 @@ void idPlayer::Spawn( void ) {
 			}
 		}
 
-		if (!monhud) {
-			monhud = uiManager->FindGui("guis/attacks.gui", true, false, true);
-			if (!monhud) {
-				gameLocal.Warning("idPlayer::Spawn() - No Monster hud found.");
-			}
-		}
-
 		if ( hud ) {
 			hud->Activate( true, gameLocal.time );
 		}
@@ -1882,11 +1874,6 @@ void idPlayer::Spawn( void ) {
 		if ( mphud ) {
 			mphud->Activate( true, gameLocal.time );
 		}
-
-		if (monhud) {
-			monhud->Activate(true, gameLocal.time);
-		}
-
 
 		// load cursor
 		GetCursorGUI();
@@ -14274,7 +14261,7 @@ bool idPlayer::MonCatch(idEntity* hitEntity, idPlayer* player) {
 	// Get existing angles and keep the same rotation
 	idAngles angles = player->GetPhysics()->GetAxis().ToAngles();
 	spawnArgs.SetVector("angles", angles.ToForward());
-	spawnArgs.Set("passive", "1");
+	spawnArgs.Set("passive", "0");
 	gameLocal.Printf("Max health of caught entity: %d\n", hitEntity->health);
 	spawnArgs.SetInt("health", hitEntity->health);
 
@@ -14394,26 +14381,46 @@ void idPlayer::MonOptions(int input) {
 void idPlayer::MonsterAttack(idEntity* monster, int attack_inp) {
 	idAI* mon = dynamic_cast<idAI*>(monster);
 	idList<idStr> attacklist = mon->monsterAttacks;
+	idStr attack; const idDict* meleeDict;
 	switch (attack_inp) {
 	case 0:
-
+		if (attacklist.Num() == 0) {
+			break;
+		}
+		attack = attacklist[0];
+		mon->SetState(mon->monsterAttacks[0].c_str());
 		break;
 	case 1:
 		if (attacklist.Num() < 2) {
-
+			break;
 		}
+		//attack = attacklist[1];
+		//mon->Event_AttackMelee("melee_left");
+		meleeDict = gameLocal.FindEntityDefDict(mon->spawnArgs.GetString("def_attack_melee_left"), false);
+		if (!meleeDict) {
+			gameLocal.Printf("ERROR: Attack definition for 'melee_left' not found!\n");
+			return;
+		}
+		mon->AttackMelee("melee_left", meleeDict);
+
+		//mon->SetState(mon->monsterAttacks[1].c_str());
 		break;
 	case 2:
 		if (attacklist.Num() < 3) {
-
+			break;
 		}
+		attack = attacklist[2];
+		mon->SetState(mon->monsterAttacks[2].c_str());
 		break;
 	case 3:
 		if (attacklist.Num() < 4) {
 			mon->Damage(mon, mon, vec3_zero, "damage_explosion", 100, 0);
 			MonsterKilled(mon,currmon);
 			mon->PostEventMS(&EV_SafeRemove, 0);
+			break;
 		}
+		attack = attacklist[3];
+		mon->SetState(mon->monsterAttacks[3].c_str());
 		break;
 	default:
 		break;
